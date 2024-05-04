@@ -22,7 +22,7 @@ MessagesCollection.after.insert(function afterInsert(userId, document) {
      *
      * Tracking observations is done through the "viewingConversation" subscription
     */
-    ParticipantsCollection.update({
+    ParticipantsCollection.updateAsync({
         userId: { $ne: userId },
         conversationId: document.conversationId,
         observing: {
@@ -36,9 +36,9 @@ MessagesCollection.after.insert(function afterInsert(userId, document) {
     });
 
     // update the date on the conversation for sorting the conversation from newest to oldest
-    ConversationsCollection.update(document.conversationId, { $inc: { messageCount: 1 } });
+    ConversationsCollection.updateAsync(document.conversationId, { $inc: { messageCount: 1 } });
 });
 
 MessagesCollection.after.remove(function afterRemove(userId, document) {
-    ConversationsCollection.update(document.conversationId, { $inc: { messageCount: -1 } });
+    ConversationsCollection.updateAsync(document.conversationId, { $inc: { messageCount: -1 } });
 });

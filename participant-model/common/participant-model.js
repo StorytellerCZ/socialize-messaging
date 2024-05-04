@@ -1,5 +1,5 @@
 /* eslint-disable import/no-unresolved */
-import SimpleSchema from 'simpl-schema';
+import SimpleSchema from 'meteor/aldeed:simpl-schema';
 /* eslint-enable import/no-unresolved */
 
 export default ({ Meteor, BaseModel, ServerTime, ParticipantsCollection, ConversationsCollection }) => {
@@ -54,16 +54,16 @@ export default ({ Meteor, BaseModel, ServerTime, ParticipantsCollection, Convers
         * Get the user that is the participant
         * @returns {User} The user who is the participant in the conversation
         */
-        user() {
-            return Meteor.users.findOne({ _id: this.userId });
+        async user() {
+            return Meteor.users.findOneAsync({ _id: this.userId });
         }
 
         /**
         * Get the conversation that the participant is involved in
         * @returns {Conversation} The conversation the user is participating in
         */
-        conversation() {
-            return ConversationsCollection.findOne({ _id: this.conversationId });
+        async conversation() {
+            return ConversationsCollection.findOneAsync({ _id: this.conversationId });
         }
 
         /**

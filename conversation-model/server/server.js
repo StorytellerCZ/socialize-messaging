@@ -26,12 +26,12 @@ ConversationsCollection.after.remove(function afterRemove(userId, document) {
 
 
 Meteor.methods({
-    findExistingConversationWithUsers(users) {
+    async findExistingConversationWithUsers(users) {
         check(users, [String]);
 
         users.push(Meteor.userId());
 
-        const conversation = ConversationsCollection.findOne({ _participants: { $size: users.length, $all: users } });
+        const conversation = await ConversationsCollection.findOneAsync({ _participants: { $size: users.length, $all: users } });
 
         return conversation && conversation._id;
     },

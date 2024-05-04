@@ -1,5 +1,5 @@
 /* eslint-disable import/no-unresolved */
-import SimpleSchema from 'simpl-schema';
+import SimpleSchema from 'meteor/aldeed:simple-schema';
 /* eslint-enable import/no-unresolved */
 
 export default ({ Meteor, LinkableModel, LinkParent, ServerTime, MessagesCollection }) => {
@@ -42,8 +42,8 @@ export default ({ Meteor, LinkableModel, LinkParent, ServerTime, MessagesCollect
         * Get the user that wrote the message
         * @returns {User} The user who wrote the message
         */
-        user() {
-            return Meteor.users.findOne({ _id: this.userId });
+        async user() {
+            return await Meteor.users.findOneAsync({ _id: this.userId });
         }
 
         /**
