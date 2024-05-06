@@ -6,6 +6,14 @@ import { check } from 'meteor/check';
 import { ParticipantsCollection, ConversationsCollection, MessagesCollection } from '../../common.js';
 import './publications.js';
 
+try {
+    ConversationsCollection.createIndexAsync({ _participants: 1 })
+    ConversationsCollection.createIndexAsync({ createdAt: -1 })
+    ConversationsCollection.createIndexAsync({ updatedAt: -1 })
+} catch(e) {
+    console.debug('Failed creating indexes for conversations collection.')
+}
+
 ConversationsCollection.allow({
     insert(userId) {
         // allow all insertions and let Collection2 and SimpleSchema take care of security
@@ -15,7 +23,7 @@ ConversationsCollection.allow({
 
 // Add the creator of the collection as a participant on the conversation
 ConversationsCollection.after.insert(function afterInsert(userId, document) {
-    ParticipantsCollection.insert({ conversationId: document._id, read: true });
+    ParticipantsCollection.insertAsync({ conversationId: document._id, read: true });
 });
 
 // When we delete a conversation, clean up the participants and messages that belong to the conversation

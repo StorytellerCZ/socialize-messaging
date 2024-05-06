@@ -87,13 +87,11 @@ export default ({ Meteor, LinkableModel, LinkParent, ServerTime, MessagesCollect
                 }
                 return undefined;
             },
-            index: 1,
             denyUpdate: true,
         },
         conversationId: {
             type: String,
             regEx: SimpleSchema.RegEx.Id,
-            index: 1,
             denyUpdate: true,
         },
         body: {
@@ -107,7 +105,6 @@ export default ({ Meteor, LinkableModel, LinkParent, ServerTime, MessagesCollect
                 }
                 return undefined;
             },
-            index: -1,
             denyUpdate: true,
         },
         // Latest update date
@@ -117,7 +114,6 @@ export default ({ Meteor, LinkableModel, LinkParent, ServerTime, MessagesCollect
             autoValue() {
                 return ServerTime.date();
             },
-            index: -1,
         },
         inFlight: {
             type: Boolean,

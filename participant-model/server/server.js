@@ -7,6 +7,16 @@ import { UserPresence } from 'meteor/socialize:user-presence';
 
 import { ParticipantsCollection, ConversationsCollection } from '../../common.js';
 
+try {
+    ParticipantsCollection.createIndexAsync({ userId: 1 })
+    ParticipantsCollection.createIndexAsync({ conversationId: 1 })
+    ParticipantsCollection.createIndexAsync({ observing: 1 })
+    ParticipantsCollection.createIndexAsync({ createdAt: -1 })
+    ParticipantsCollection.createIndexAsync({ updatedAt: -1 })
+} catch(e) {
+    console.debug('Failed creating indexes for participants collection.')
+}
+
 ParticipantsCollection.allow({
     insert(userId, participant) {
         const user = User.createEmpty(userId);

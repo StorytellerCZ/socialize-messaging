@@ -1,5 +1,5 @@
 /* eslint-disable import/no-unresolved */
-import SimpleSchema from 'meteor/aldeed:simpl-schema';
+import SimpleSchema from 'meteor/aldeed:simple-schema';
 /* eslint-enable import/no-unresolved */
 
 export default ({ Meteor, BaseModel, ServerTime, ParticipantsCollection, ConversationsCollection }) => {
@@ -96,14 +96,12 @@ export default ({ Meteor, BaseModel, ServerTime, ParticipantsCollection, Convers
                 }
                 return undefined;
             },
-            denyUpdate: true,
-            index: 1,
+            denyUpdate: true
         },
         conversationId: {
             type: String,
             regEx: SimpleSchema.RegEx.Id,
-            denyUpdate: true,
-            index: 1,
+            denyUpdate: true
         },
         read: {
             type: Boolean,
@@ -121,8 +119,7 @@ export default ({ Meteor, BaseModel, ServerTime, ParticipantsCollection, Convers
                 }
                 return undefined;
             },
-            denyUpdate: true,
-            index: -1,
+            denyUpdate: true
         },
         // Latest update date
         updatedAt: {
@@ -130,13 +127,11 @@ export default ({ Meteor, BaseModel, ServerTime, ParticipantsCollection, Convers
             optional: true,
             autoValue() {
                 return ServerTime.date();
-            },
-            index: -1,
+            }
         },
         observing: {
             type: Array,
-            defaultValue: [],
-            index: 1,
+            defaultValue: []
         },
         'observing.$': {
             type: String,

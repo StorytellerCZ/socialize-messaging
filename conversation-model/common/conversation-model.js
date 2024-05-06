@@ -151,7 +151,6 @@ export default ({ Meteor, BaseModel, User, ServerTime, ConversationsCollection,
                 }
                 return undefined;
             },
-            index: -1,
             denyUpdate: true,
         },
         updatedAt: {
@@ -159,8 +158,7 @@ export default ({ Meteor, BaseModel, User, ServerTime, ConversationsCollection,
             optional: true,
             autoValue() {
                 return ServerTime.date();
-            },
-            index: -1,
+            }
         },
         messageCount: {
             type: Number,
@@ -169,8 +167,7 @@ export default ({ Meteor, BaseModel, User, ServerTime, ConversationsCollection,
         },
         _participants: {
             type: Array,
-            defaultValue: [],
-            index: 1,
+            defaultValue: []
         },
         '_participants.$': {
             type: String,

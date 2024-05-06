@@ -11,7 +11,8 @@ Package.onUse(function _(api) {
 
     api.use([
         'check',
-        'socialize:user-presence@1.0.5',
+        'aldeed:simple-schema@1.13.1',
+        'socialize:user-presence@2.0.0',
         'socialize:linkable-model@2.0.0',
         'reywood:publish-composite@1.8.9',
     ]);

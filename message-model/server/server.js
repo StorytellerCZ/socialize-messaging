@@ -1,5 +1,14 @@
 import { ParticipantsCollection, ConversationsCollection, MessagesCollection } from '../../common.js';
 
+try {
+    MessagesCollection.createIndexAsync({ userId: 1 })
+    MessagesCollection.createIndexAsync({ conversationId: 1 })
+    MessagesCollection.createIndexAsync({ createdAt: -1 })
+    MessagesCollection.createIndexAsync({ updatedAt: -1 })
+} catch(e) {
+    console.debug('Failed creating indexes for message collection.')
+}
+
 MessagesCollection.allow({
     // If the user is a participant, allow them to insert (send) a message
     insert(userId, message) {
