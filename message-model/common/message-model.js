@@ -42,7 +42,14 @@ export default ({ Meteor, LinkableModel, LinkParent, ServerTime, MessagesCollect
         * Get the user that wrote the message
         * @returns {User} The user who wrote the message
         */
-        async user() {
+        user() {
+            if (Meteor.isServer) {
+                return this.userAsync();
+            }
+
+            return Meteor.users.findOne({ _id: this.userId });
+        }
+        async userAsync() {
             return await Meteor.users.findOneAsync({ _id: this.userId });
         }
 

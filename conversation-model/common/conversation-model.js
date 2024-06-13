@@ -45,8 +45,16 @@ export default ({ Meteor, BaseModel, User, ServerTime, ConversationsCollection,
         * @returns {Boolean} Whether the conversation is unread
         */
         isUnread() {
+            if (Meteor.isServer) {
+                return this.isUnreadAsync();
+            }
             const userId = Meteor.userId();
             return !!ParticipantsCollection.findOne({ conversationId: this._id, userId, read: false });
+        }
+        async isUnreadAsync() {
+            const userId = Meteor.userId();
+            const check = await ParticipantsCollection.findOneAsync({ conversationId: this._id, userId, read: false });
+            return !!check
         }
 
         /**
@@ -72,16 +80,25 @@ export default ({ Meteor, BaseModel, User, ServerTime, ConversationsCollection,
         * @returns {Message} An instance of Message which was the last sent message for the conversation
         */
         lastMessage() {
+            if (Meteor.isServer) {
+                return this.lastMessageAsync();
+            }
             return MessagesCollection.findOne({ conversationId: this._id }, { sort: { createdAt: -1 }, limit: 1 });
+        }
+        async lastMessageAsync() {
+            return MessagesCollection.findOneAsync({ conversationId: this._id }, { sort: { createdAt: -1 }, limit: 1 });
         }
 
         /**
         * Add a new message to the conversation
         * @param {String}   body     The body of the message
-        * @param {Function} callback The callback to run upon insertion of the document
         */
         sendMessage(body) {
-            new Message({ body, conversationId: this._id, inFlight: true }).save();
+            if (Meteor.isServer) {
+                new Message({ body, conversationId: this._id, inFlight: true }).saveAsync();
+            } else {
+                new Message({ body, conversationId: this._id, inFlight: true }).save();
+            }
         }
 
         /**
@@ -90,9 +107,9 @@ export default ({ Meteor, BaseModel, User, ServerTime, ConversationsCollection,
         */
         addParticipants(participants) {
             if (Array.isArray(participants)) {
-                participants.forEach((participant) => {
+                for (const participant of participants) {
                     this.addParticipant(participant);
-                });
+                }
             } else {
                 this.addParticipant(participants);
             }
@@ -104,7 +121,11 @@ export default ({ Meteor, BaseModel, User, ServerTime, ConversationsCollection,
         */
         addParticipant(participant) {
             if (participant instanceof User) {
-                new Participant({ userId: participant._id, conversationId: this._id }).save();
+                if (Meteor.isServer) {
+                    new Participant({ userId: participant._id, conversationId: this._id }).saveAsync();
+                } else {
+                    new Participant({ userId: participant._id, conversationId: this._id }).save();
+                }
             } else {
                 throw new Meteor.Error('User Required', 'Each participant must be an instance of User Class');
             }
@@ -117,8 +138,15 @@ export default ({ Meteor, BaseModel, User, ServerTime, ConversationsCollection,
         * @param {Boolean} state The read state to set
         */
         updateReadState(state) {
+            if (Meteor.isServer) {
+                return this.updateReadStateAsync(state);
+            }
             const participant = ParticipantsCollection.findOne({ conversationId: this._id, userId: Meteor.userId() });
             participant.update({ $set: { read: state } });
+        }
+        async updateReadState(state) {
+            const participant = await ParticipantsCollection.findOneAsync({ conversationId: this._id, userId: Meteor.userId() });
+            participant.updateAsync({ $set: { read: state } });
         }
 
         /**
@@ -134,7 +162,7 @@ export default ({ Meteor, BaseModel, User, ServerTime, ConversationsCollection,
                 const participant = ParticipantsCollection.findOne(query);
                 participant && participant.update(modifier);
             } else {
-                ParticipantsCollection.update(query, modifier);
+                ParticipantsCollection.updateAsync(query, modifier);
             }
         }
     }

@@ -28,8 +28,8 @@ ConversationsCollection.after.insert(function afterInsert(userId, document) {
 
 // When we delete a conversation, clean up the participants and messages that belong to the conversation
 ConversationsCollection.after.remove(function afterRemove(userId, document) {
-    MessagesCollection.direct.remove({ conversationId: document._id });
-    ParticipantsCollection.direct.remove({ conversationId: document._id });
+    MessagesCollection.direct.removeAsync({ conversationId: document._id });
+    ParticipantsCollection.direct.removeAsync({ conversationId: document._id });
 });
 
 

@@ -11,8 +11,9 @@ try {
 
 MessagesCollection.allow({
     // If the user is a participant, allow them to insert (send) a message
-    insert(userId, message) {
-        if (userId && ParticipantsCollection.findOne({ userId, conversationId: message.conversationId })) {
+    async insert(userId, message) {
+        const found = await ParticipantsCollection.findOneAsync({ userId, conversationId: message.conversationId })
+        if (userId && found) {
             return true;
         }
         return false;

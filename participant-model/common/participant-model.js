@@ -54,7 +54,13 @@ export default ({ Meteor, BaseModel, ServerTime, ParticipantsCollection, Convers
         * Get the user that is the participant
         * @returns {User} The user who is the participant in the conversation
         */
-        async user() {
+        user() {
+            if (Meteor.isServer) {
+                return this.userAsync();
+            }
+            return Meteor.users.findOne({ _id: this.userId });
+        }
+        async userAsync() {
             return Meteor.users.findOneAsync({ _id: this.userId });
         }
 
@@ -62,7 +68,13 @@ export default ({ Meteor, BaseModel, ServerTime, ParticipantsCollection, Convers
         * Get the conversation that the participant is involved in
         * @returns {Conversation} The conversation the user is participating in
         */
-        async conversation() {
+        conversation() {
+            if (Meteor.isServer) {
+                return this.conversationAsync();
+            }
+            return ConversationsCollection.findOne({ _id: this.conversationId });
+        }
+        async conversationAsync() {
             return ConversationsCollection.findOneAsync({ _id: this.conversationId });
         }
 
