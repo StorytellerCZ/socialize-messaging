@@ -11,7 +11,7 @@ Package.onUse(function _(api) {
 
   api.use([
     'check',
-    'aldeed:simple-schema@1.13.1 || 2.0.0',
+    'aldeed:simple-schema@2.0.0 || 3.0.0',
     'socialize:user-presence@2.0.0',
     'socialize:linkable-model@2.0.0',
     'reywood:publish-composite@1.8.9'
