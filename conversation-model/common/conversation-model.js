@@ -95,7 +95,9 @@ export default ({ Meteor, BaseModel, User, ServerTime, ConversationsCollection,
         */
         sendMessage(body) {
             if (Meteor.isServer) {
-                new Message({ body, conversationId: this._id, inFlight: true }).saveAsync();
+                // Returned so callers can await the insert; the message hook
+                // (Novu) reads the participants, which must already exist.
+                return new Message({ body, conversationId: this._id, inFlight: true }).saveAsync();
             } else {
                 new Message({ body, conversationId: this._id, inFlight: true }).save();
             }
@@ -107,12 +109,9 @@ export default ({ Meteor, BaseModel, User, ServerTime, ConversationsCollection,
         */
         addParticipants(participants) {
             if (Array.isArray(participants)) {
-                for (const participant of participants) {
-                    this.addParticipant(participant);
-                }
-            } else {
-                this.addParticipant(participants);
+                return Promise.all(participants.map(participant => this.addParticipant(participant)));
             }
+            return this.addParticipant(participants);
         }
 
         /**
@@ -122,7 +121,7 @@ export default ({ Meteor, BaseModel, User, ServerTime, ConversationsCollection,
         addParticipant(participant) {
             if (participant instanceof User) {
                 if (Meteor.isServer) {
-                    new Participant({ userId: participant._id, conversationId: this._id }).saveAsync();
+                    return new Participant({ userId: participant._id, conversationId: this._id }).saveAsync();
                 } else {
                     new Participant({ userId: participant._id, conversationId: this._id }).save();
                 }
