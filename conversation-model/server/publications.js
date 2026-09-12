@@ -153,17 +153,17 @@ Meteor.publish('socialize.messagesFor', function publishMessageFor(conversationI
  *
  * @param   {String}    conversationId The _id of the conversation the user is viewing
  */
-Meteor.publish('socialize.viewingConversation', function viewingConversationPublication(conversationId) {
+Meteor.publish('socialize.viewingConversation', async function viewingConversationPublication(conversationId) {
     check(conversationId, String);
 
     if (this.userId) {
         const user = User.createEmpty(this.userId);
 
-        if (user.isParticipatingIn(conversationId)) {
+        if (await user.isParticipatingInAsync(conversationId)) {
             const sessionId = this._session.id;
 
 
-            ParticipantsCollection.updateAsync({
+            await ParticipantsCollection.updateAsync({
                 conversationId, userId: this.userId,
             }, {
                 $addToSet: { observing: sessionId },
