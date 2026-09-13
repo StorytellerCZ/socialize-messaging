@@ -85,7 +85,7 @@ export default ({ Meteor, User, ParticipantsCollection, ConversationsCollection 
             return !!ParticipantsCollection.findOne({ userId: this._id, conversationId, deleted: { $exists: false } });
         },
         async isParticipatingInAsync(conversationId) {
-            return !!ParticipantsCollection.findOneAsync({ userId: this._id, conversationId, deleted: { $exists: false } });
+            return !!await ParticipantsCollection.findOneAsync({ userId: this._id, conversationId, deleted: { $exists: false } });
         },
         /**
         * Check if the user is observing a particular conversation
@@ -99,7 +99,7 @@ export default ({ Meteor, User, ParticipantsCollection, ConversationsCollection 
             return !!ParticipantsCollection.findOne({ userId: this._id, conversationId, 'observing.0': { $exists: true } });
         },
         async isObservingAsync(conversationId) {
-            return !!ParticipantsCollection.findOneAsync({ userId: this._id, conversationId, 'observing.0': { $exists: true } });
+            return !!await ParticipantsCollection.findOneAsync({ userId: this._id, conversationId, 'observing.0': { $exists: true } });
         },
         /**
         *  Find existing conversation between this user a number of other users

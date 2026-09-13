@@ -18,42 +18,28 @@ try {
 }
 
 ParticipantsCollection.allow({
-    insert(userId, participant) {
-        const user = User.createEmpty(userId);
-        const addedUser = User.createEmpty(participant.userId);
-
-        if (!userId) {
-            throw new Meteor.Error('Must Login', 'User must be logged in to perform this action');
-        }
-
-        // only allow participant to be added on client if the currentUser is already
-        // participating and the added user is not currently participating in the conversation
-        if (user.isParticipatingIn(participant.conversationId)) {
-            if (addedUser.isParticipatingIn(participant.conversationId)) {
-                throw new Meteor.Error('Already Participating', `${addedUser._id} is already participating in in this conversation`);
-            } else {
-                return true;
-            }
-        } else {
-            throw new Meteor.Error('Must Be Participating', `${user._id} is not participating in this conversation, so therefore cannot add users to it.`);
-        }
-    },
-    update(userId, participant) {
-        // can be updated if the record belongs to the currentUser
-        return participant.checkOwnership();
+    fetch: ['userId', 'deleted'],
+    insert() { return false; },
+    update(userId, participant, fields, modifier) {
+        return !!userId && participant.userId === userId && !participant.deleted
+            && fields.every(field => ['read', 'deleted', 'updatedAt'].includes(field))
+            && Object.keys(modifier).every(operator => operator === '$set')
+            && (!fields.includes('deleted') || modifier.$set.deleted === true);
     },
 });
 
-ParticipantsCollection.after.insert(function afterInsert(userId, document) {
-    ConversationsCollection.updateAsync(document.conversationId, { $addToSet: { _participants: document.userId } });
+ParticipantsCollection.after.insert(async function afterInsert(userId, document) {
+    await ConversationsCollection.updateAsync(document.conversationId, { $addToSet: { _participants: document.userId } });
 });
 
-ParticipantsCollection.after.update(function afterUpdate(userId, document) {
-    if (document.deleted) {
-        if (this.transform().conversation().isReadOnly()) {
-            ConversationsCollection.removeAsync(document.conversationId);
+ParticipantsCollection.after.update(async function afterUpdate(userId, document, fieldNames) {
+    if (fieldNames.includes('deleted') && document.deleted) {
+        const conversation = await this.transform().conversation();
+        if (!conversation) return;
+        if (conversation.isReadOnly()) {
+            await ConversationsCollection.removeAsync(document.conversationId);
         } else {
-            ConversationsCollection.updateAsync(document.conversationId, { $pull: { _participants: document.userId } });
+            await ConversationsCollection.updateAsync(document.conversationId, { $pull: { _participants: document.userId } });
         }
     }
 });

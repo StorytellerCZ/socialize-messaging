@@ -6,28 +6,22 @@ import { publishComposite } from 'meteor/reywood:publish-composite';
 
 import { ParticipantsCollection, Conversation, ConversationsCollection } from '../../common.js';
 
-let SyntheticMutator;
-
-if (ParticipantsCollection.configureRedisOplog) {
-    SyntheticMutator = require('meteor/cultofcoders:redis-oplog').SyntheticMutator; // eslint-disable-line
-}
-
-
 const optionsArgumentCheck = {
     limit: Match.Optional(Number),
     skip: Match.Optional(Number),
     sort: Match.Optional(Object),
 };
 
-publishComposite('socialize.conversation', function publishConversation(conversationId) {
+publishComposite('socialize.conversation', async function publishConversation(conversationId) {
     check(conversationId, String);
 
     if (this.userId) {
         const user = User.createEmpty(this.userId);
-        if (user.isParticipatingIn(conversationId)) {
+        if (await user.isParticipatingInAsync(conversationId)) {
+            const userId = this.userId;
             return {
                 find() {
-                    return ConversationsCollection.find({ _id: conversationId }, { limit: 1 });
+                    return ConversationsCollection.find({ _id: conversationId, _participants: userId }, { limit: 1 });
                 },
                 children: [
                     {
@@ -52,40 +46,27 @@ publishComposite('socialize.conversation', function publishConversation(conversa
     return this.ready();
 });
 
-publishComposite('socialize.conversations', function publishConversations(options = { limit: 10, sort: { updatedAt: -1 } }) {
+publishComposite('socialize.conversations', function publishConversations(options = { limit: 25, sort: { updatedAt: -1, createdAt: -1, _id: 1 } }) {
     check(options, optionsArgumentCheck);
-    if (!this.userId) {
-        return this.ready();
-    }
-
+    if (!this.userId) return this.ready();
+    const userId = this.userId;
     return {
         find() {
-            return ParticipantsCollection.find({ userId: this.userId, deleted: { $exists: false } }, options);
+            return ConversationsCollection.find({ _participants: userId }, options);
         },
         children: [
             {
-                find(participant) {
-                    return ConversationsCollection.find({ _id: participant.conversationId });
+                find(conversation) { return conversation.participants(); },
+                children: [{
+                    find(participant) {
+                        return Meteor.users.find({ _id: participant.userId }, { fields: User.fieldsToPublish });
+                    },
+                }],
+            },
+            {
+                find(conversation) {
+                    return conversation.messages({ limit: 1, sort: { createdAt: -1, _id: -1 } });
                 },
-                children: [
-                    {
-                        find(conversation) {
-                            return conversation.participants();
-                        },
-                        children: [
-                            {
-                                find(participant) {
-                                    return Meteor.users.find({ _id: participant.userId }, { fields: User.fieldsToPublish });
-                                },
-                            },
-                        ],
-                    },
-                    {
-                        find(conversation) {
-                            return conversation.messages({ limit: 1, sort: { createdAt: -1 } });
-                        },
-                    },
-                ],
             },
         ],
     };
@@ -131,14 +112,18 @@ publishComposite('socialize.unreadConversations', function publishUnreadConversa
 });
 
 
-Meteor.publish('socialize.messagesFor', function publishMessageFor(conversationId, options = { limit: 30, sort: { createdAt: -1 } }) {
+publishComposite('socialize.messagesFor', async function publishMessageFor(conversationId, options = { limit: 30, sort: { createdAt: -1 } }) {
     check(conversationId, String);
     check(options, optionsArgumentCheck);
     if (this.userId) {
         const user = User.createEmpty(this.userId);
         const conversation = Conversation.createEmpty(conversationId);
-        if (user.isParticipatingIn(conversationId)) {
-            return conversation.messages(options);
+        if (await user.isParticipatingInAsync(conversationId)) {
+            const userId = this.userId;
+            return {
+                find() { return ConversationsCollection.find({ _id: conversationId, _participants: userId }, { fields: { _participants: 1 } }); },
+                children: [{ find() { return conversation.messages(options); } }],
+            };
         }
     }
     return this.ready();
@@ -195,9 +180,10 @@ Meteor.publish('socialize.typing', async function typingPublication(conversation
     if (this.userId) {
         const user = User.createEmpty(this.userId);
 
-        if (user.isParticipatingIn(conversationId)) {
+        if (await user.isParticipatingInAsync(conversationId)) {
             const participant = await ParticipantsCollection.findOneAsync({ conversationId, userId: this.userId }, { fields: { _id: 1 } });
 
+            if (!participant) return this.ready();
             const sessionId = this._session.id;
 
             const typingModifier = {
@@ -208,21 +194,8 @@ Meteor.publish('socialize.typing', async function typingPublication(conversation
                 $pull: { typing: sessionId },
             };
 
-            const collectionName = participant.getCollectionName();
-
-            if (SyntheticMutator) {
-                SyntheticMutator.updateAsync(`conversations::${conversationId}::${collectionName}`, participant._id, typingModifier);
-
-                this.onStop(() => {
-                    SyntheticMutator.updateAsync(`conversations::${conversationId}::${collectionName}`, participant._id, notTypingModifier);
-                });
-            } else {
-                participant.updateAsync(typingModifier);
-
-                this.onStop(() => {
-                    participant.updateAsync(notTypingModifier);
-                });
-            }
+            await ParticipantsCollection.updateAsync(participant._id, typingModifier);
+            this.onStop(() => ParticipantsCollection.updateAsync(participant._id, notTypingModifier));
         }
     }
 
