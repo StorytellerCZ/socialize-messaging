@@ -143,9 +143,9 @@ export default ({ Meteor, BaseModel, User, ServerTime, ConversationsCollection,
             const participant = ParticipantsCollection.findOne({ conversationId: this._id, userId: Meteor.userId() });
             participant.update({ $set: { read: state } });
         }
-        async updateReadState(state) {
+        async updateReadStateAsync(state) {
             const participant = await ParticipantsCollection.findOneAsync({ conversationId: this._id, userId: Meteor.userId() });
-            participant.updateAsync({ $set: { read: state } });
+            if (participant) return ParticipantsCollection.updateAsync(participant._id, { $set: { read: state } });
         }
 
         /**
@@ -161,7 +161,7 @@ export default ({ Meteor, BaseModel, User, ServerTime, ConversationsCollection,
                 const participant = ParticipantsCollection.findOne(query);
                 participant && participant.update(modifier);
             } else {
-                ParticipantsCollection.updateAsync(query, modifier);
+                return ParticipantsCollection.updateAsync(query, modifier);
             }
         }
     }

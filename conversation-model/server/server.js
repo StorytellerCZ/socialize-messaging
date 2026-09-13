@@ -15,21 +15,18 @@ try {
 }
 
 ConversationsCollection.allow({
-    insert(userId) {
-        // allow all insertions and let Collection2 and SimpleSchema take care of security
-        return userId && true;
-    },
+    insert() { return false; },
 });
 
 // Add the creator of the collection as a participant on the conversation
-ConversationsCollection.after.insert(function afterInsert(userId, document) {
-    ParticipantsCollection.insertAsync({ conversationId: document._id, read: true });
+ConversationsCollection.after.insert(async function afterInsert(userId, document) {
+    await ParticipantsCollection.insertAsync({ conversationId: document._id, userId, read: true });
 });
 
 // When we delete a conversation, clean up the participants and messages that belong to the conversation
-ConversationsCollection.after.remove(function afterRemove(userId, document) {
-    MessagesCollection.direct.removeAsync({ conversationId: document._id });
-    ParticipantsCollection.direct.removeAsync({ conversationId: document._id });
+ConversationsCollection.after.remove(async function afterRemove(userId, document) {
+    await MessagesCollection.direct.removeAsync({ conversationId: document._id });
+    await ParticipantsCollection.direct.removeAsync({ conversationId: document._id });
 });
 
 

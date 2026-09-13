@@ -9,32 +9,25 @@ try {
     console.debug('Failed creating indexes for message collection.')
 }
 
+// Sending goes through pm.reply / pm.conversation.new, which enforce restrictions
+// and sanitize content. Ownership alone must not enable a second write path.
 MessagesCollection.allow({
-    // If the user is a participant, allow them to insert (send) a message
-    async insert(userId, message) {
-        const found = await ParticipantsCollection.findOneAsync({ userId, conversationId: message.conversationId })
-        if (userId && found) {
-            return true;
-        }
-        return false;
-    },
-    // If the user sent the message, let them modify it.
-    update(userId, message) {
-        return userId && message.checkOwnership();
-    },
+    insert() { return false; },
+    update() { return false; },
 });
 
 // After a message is sent we need to update the ParticipantsCollection and ConversationsCollection
-MessagesCollection.after.insert(function afterInsert(userId, document) {
+MessagesCollection.after.insert(async function afterInsert(userId, document) {
     /* Only update participants who aren't observing the conversation.
      * If we update users who are reading the conversation it will show the
      * conversation as unread to the user. This would be bad UX design
      *
      * Tracking observations is done through the "viewingConversation" subscription
     */
-    ParticipantsCollection.updateAsync({
+    await ParticipantsCollection.updateAsync({
         userId: { $ne: userId },
         conversationId: document.conversationId,
+        deleted: { $exists: false },
         observing: {
             $size: 0,
         },
@@ -46,9 +39,9 @@ MessagesCollection.after.insert(function afterInsert(userId, document) {
     });
 
     // update the date on the conversation for sorting the conversation from newest to oldest
-    ConversationsCollection.updateAsync(document.conversationId, { $inc: { messageCount: 1 } });
+    await ConversationsCollection.updateAsync(document.conversationId, { $inc: { messageCount: 1 } });
 });
 
-MessagesCollection.after.remove(function afterRemove(userId, document) {
-    ConversationsCollection.updateAsync(document.conversationId, { $inc: { messageCount: -1 } });
+MessagesCollection.after.remove(async function afterRemove(userId, document) {
+    await ConversationsCollection.updateAsync(document.conversationId, { $inc: { messageCount: -1 } });
 });
